@@ -14,5 +14,5 @@ module.exports = async () => {
   console.time("scantime");
   console.log(`S3 Bucket Count (All Regions): ${await s3BucketCount(s3Alert)}`);
   await lambdaListFunctions();
-  console.log(`Scan completed`, console.timeEnd("scantime"));
+  console.log("Scan completed");
 };

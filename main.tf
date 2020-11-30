@@ -57,6 +57,13 @@ resource "aws_iam_policy" "policy" {
             "lambda:ListFunctions"
          ],
          "Resource":"*"
+      },
+      {
+          "Effect": "Allow",
+          "Action": [
+              "sns:*"
+          ],
+          "Resource": "*"
       }
    ]
 }
@@ -85,7 +92,7 @@ resource "aws_lambda_function" "test_lambda" {
     variables = {
       "config": jsonencode(var.butler_config),
       "alerts": jsonencode(var.butler_alerts),
-      "snsArn": aws_sns_topic.butler_alerts.arn
+      "snsArn": data.aws_cloudformation_export.topic_arn.value
     }
   }
 }
@@ -110,6 +117,26 @@ resource "aws_lambda_permission" "allow_cloudwatch_to_call_check" {
   source_arn    = aws_cloudwatch_event_rule.every_one_hour.arn
 }
 
-resource "aws_sns_topic" "butler_alerts" {
-  name = "aws-butler-alerts-topic"
+
+# SNS Topic / Subscription
+data "template_file" "aws_cf_sns_stack" {
+   template = file("${path.module}/templates/cf_aws_sns_email_stack.json.tpl")
+   vars = {
+     sns_topic_name        = "aws-butler-alerts-topic"
+     sns_display_name      = "AWS Butler Alerts"
+     sns_subscription_list = join(",", formatlist("{\"Endpoint\": \"%s\",\"Protocol\": \"%s\"}",
+     var.butler_contacts,
+     "email"))
+   }
+ }
+ 
+ data "aws_cloudformation_export" "topic_arn" {
+  name = "TopicArn"
 }
+ resource "aws_cloudformation_stack" "tf_sns_topic" {
+   name = "snsStack"
+   template_body = data.template_file.aws_cf_sns_stack.rendered
+   tags = {
+     name = "snsStack"
+   }
+ }

@@ -13,7 +13,10 @@ variable "butler_config" {
 }
 
 variable "butler_alerts" {
-  type = "list"
+  type = list(object({
+    alertType     = string
+    triggerValue  = number
+  }))
   description = "Configure alerts for each service"
   default = [
       {
@@ -24,5 +27,13 @@ variable "butler_alerts" {
         alertType = "s3_bucket_threshold"
         triggerValue = 5
       }
+  ]
+}
+
+variable "butler_contacts" {
+  type = list(string)
+  description = "A list of email addresses Butler will alert"
+  default = [
+    "kieran.crown@gmail.com"
   ]
 }
